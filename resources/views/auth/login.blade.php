@@ -60,7 +60,9 @@
                                 </a>
                             </div>
                         </div>
+
                     </form>
+                    <a class="btn badge-secondary" href="{{url('login/github')}}">Login GitHub</a>
                 </div>
             </div>
         </div>

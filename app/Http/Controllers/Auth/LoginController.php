@@ -1,39 +1,83 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+    namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\AuthenticatesUsers;
+    use App\Http\Controllers\Controller;
+    use App\User;
+    use Illuminate\Foundation\Auth\AuthenticatesUsers;
+    use Laravel\Socialite\Facades\Socialite;
+    use Auth;
 
-class LoginController extends Controller
-{
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
+    class LoginController extends Controller {
+        /*
+        |--------------------------------------------------------------------------
+        | Login Controller
+        |--------------------------------------------------------------------------
+        |
+        | This controller handles authenticating users for the application and
+        | redirecting them to your home screen. The controller uses a trait
+        | to conveniently provide its functionality to your applications.
+        |
+        */
 
-    use AuthenticatesUsers;
+        use AuthenticatesUsers;
 
-    /**
-     * Where to redirect users after login.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/home';
+        /**
+         * Where to redirect users after login.
+         *
+         * @var string
+         */
+        protected $redirectTo = '/home';
 
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->middleware('guest')->except('logout');
+        /**
+         * Create a new controller instance.
+         *
+         * @return void
+         */
+        public function __construct() {
+            $this->middleware('guest')->except('logout');
+        }
+
+        /**
+         * Redirect the user to the GitHub authentication page.
+         *
+         * @return \Illuminate\Http\Response
+         */
+        public function redirectToProvider() {
+            return Socialite::driver('github')->redirect();
+        }
+
+        /**
+         * Obtain the user information from GitHub.
+         *
+         * @return \Illuminate\Http\Response
+         */
+        public function handleProviderCallback() {
+            $github_user = Socialite::driver('github')->user();
+            $user = $this->userFindOrCreate($github_user);
+
+            Auth::login($user,true);
+
+//            dd($user);
+
+            return redirect($this->redirectTo);
+        }
+
+        public function userFindOrCreate($github_user) {
+//            dd($github_user);
+
+            $user = User::where('provider_id', $github_user->id)->first();
+
+            if (!$user) {
+
+                $user = new User;
+                $user->name = $github_user->getName();
+                $user->email = $github_user->getEmail();
+                $user->provider_id = $github_user->getId();
+
+                $user->save();
+            }
+            return $user;
+
+        }
     }
-}
